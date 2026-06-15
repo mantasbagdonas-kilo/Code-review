@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class MetricDailyTotal extends Model
+class MetricHourlyTotal extends Model
 {
     protected $guarded = [];
 }

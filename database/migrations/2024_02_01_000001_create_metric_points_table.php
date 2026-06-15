@@ -11,8 +11,9 @@ return new class extends Migration
         Schema::create('metric_points', function (Blueprint $table) {
             $table->id();
             $table->string('account_id');
+            $table->string('ad_id');
             $table->string('metric');
-            $table->date('date');
+            $table->dateTime('recorded_at');
             $table->double('value');
             $table->timestamps();
         });

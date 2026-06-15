@@ -8,11 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('metric_daily_totals', function (Blueprint $table) {
+        Schema::create('metric_hourly_totals', function (Blueprint $table) {
             $table->id();
             $table->string('account_id');
+            $table->string('ad_id');
             $table->string('metric');
-            $table->date('date');
+            $table->dateTime('bucket');
             $table->double('total');
             $table->timestamps();
         });
@@ -20,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('metric_daily_totals');
+        Schema::dropIfExists('metric_hourly_totals');
     }
 };

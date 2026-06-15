@@ -2,7 +2,7 @@
 
 namespace App\Services\Analytics;
 
-use App\Models\MetricDailyTotal;
+use App\Models\MetricHourlyTotal;
 use App\Models\MetricPoint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -15,7 +15,7 @@ class MetricsImporter
     private array $imported = [];
 
     /**
-     * Pull every metric for every account and store raw points + daily totals.
+     * Pull every ad's metrics for every account and store raw points + hourly totals.
      */
     public function importAll(array $accountIds): int
     {
@@ -34,32 +34,41 @@ class MetricsImporter
 
     public function import(string $accountId): int
     {
-        $rows = $this->fetchAllPages($accountId);
+        $ads = $this->fetchAllPages($accountId);
 
         $points = [];
-        foreach ($rows as $row) {
-            $point = MetricPoint::create([
-                'account_id' => $accountId,
-                'metric' => $row['metric'],
-                'date' => date('Y-m-d', strtotime($row['timestamp'])),
-                'value' => $row['value'],
-            ]);
+        foreach ($ads as $ad) {
+            foreach ($ad['metrics'] as $metric) {
+                $point = MetricPoint::create([
+                    'account_id' => $accountId,
+                    'ad_id' => $ad['ad_id'],
+                    'metric' => $metric['metric'],
+                    'recorded_at' => $metric['timestamp'],
+                    'value' => $metric['value'],
+                ]);
 
-            $this->imported[] = $point;
-            $points[] = $row;
+                $this->imported[] = $point;
+                $points[] = [
+                    'ad_id' => $ad['ad_id'],
+                    'metric' => $metric['metric'],
+                    'timestamp' => $metric['timestamp'],
+                    'value' => $metric['value'],
+                ];
+            }
         }
 
         $totals = collect($points)
-            ->groupBy(fn ($r) => $r['metric'] . '|' . date('Y-m-d', strtotime($r['timestamp'])))
+            ->groupBy(fn ($r) => $r['ad_id'] . '|' . $r['metric'] . '|' . date('Y-m-d H:00:00', strtotime($r['timestamp'])))
             ->map(fn ($group) => $group->sum('value'));
 
         foreach ($totals as $key => $total) {
-            [$metric, $date] = explode('|', $key);
+            [$adId, $metric, $bucket] = explode('|', $key);
 
-            MetricDailyTotal::create([
+            MetricHourlyTotal::create([
                 'account_id' => $accountId,
+                'ad_id' => $adId,
                 'metric' => $metric,
-                'date' => $date,
+                'bucket' => $bucket,
                 'total' => $total,
             ]);
         }
@@ -74,9 +83,30 @@ class MetricsImporter
 
         do {
             $response = Http::withToken(env('ANALYTICS_API_KEY'))
-                ->get(env('ANALYTICS_API_URL') . '/v1/accounts/' . $accountId . '/metrics', [
+                ->get(env('ANALYTICS_API_URL') . '/v1/accounts/' . $accountId . '/ads/metrics', [
                     'page' => $page,
                 ]);
+
+            // Example response body (one page):
+            // {
+            //   "data": [
+            //     {
+            //       "ad_id": "ad_1001",
+            //       "metrics": [
+            //         { "metric": "impressions", "timestamp": "2026-06-15T14:00:00Z", "value": 1820 },
+            //         { "metric": "clicks",      "timestamp": "2026-06-15T14:00:00Z", "value": 47 },
+            //         { "metric": "revenue",     "timestamp": "2026-06-15T14:00:00Z", "value": 215.40 }
+            //       ]
+            //     },
+            //     {
+            //       "ad_id": "ad_1002",
+            //       "metrics": [
+            //         { "metric": "impressions", "timestamp": "2026-06-15T14:00:00Z", "value": 990 }
+            //       ]
+            //     }
+            //   ],
+            //   "next_page": 2
+            // }
 
             $body = $response->json();
             $all = array_merge($all, $body['data']);

@@ -9,7 +9,7 @@ class MetricsFileImporter
 {
     /**
      * Backfill historical metric points from a CSV dump we missed in the live feed.
-     * File columns: account_id,metric,date,value
+     * File columns: account_id,ad_id,metric,recorded_at,value
      */
     public function import(string $path): int
     {
@@ -22,12 +22,13 @@ class MetricsFileImporter
                 continue;
             }
 
-            [$accountId, $metric, $date, $value] = str_getcsv($line);
+            [$accountId, $adId, $metric, $recordedAt, $value] = str_getcsv($line);
 
             $rows[] = [
                 'account_id' => $accountId,
+                'ad_id' => $adId,
                 'metric' => $metric,
-                'date' => $date,
+                'recorded_at' => $recordedAt,
                 'value' => $value,
             ];
         }
@@ -35,8 +36,9 @@ class MetricsFileImporter
         DB::transaction(function () use ($rows) {
             foreach ($rows as $row) {
                 $exists = MetricPoint::where('account_id', $row['account_id'])
+                    ->where('ad_id', $row['ad_id'])
                     ->where('metric', $row['metric'])
-                    ->where('date', $row['date'])
+                    ->where('recorded_at', $row['recorded_at'])
                     ->exists();
 
                 if (! $exists) {

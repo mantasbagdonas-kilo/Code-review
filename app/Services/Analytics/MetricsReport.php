@@ -2,22 +2,23 @@
 
 namespace App\Services\Analytics;
 
-use App\Models\MetricDailyTotal;
+use App\Models\MetricHourlyTotal;
 
 class MetricsReport
 {
     /**
-     * Build a CSV of every daily total for the finance dashboard download.
+     * Build a CSV of every hourly total for the finance dashboard download.
      */
     public function toCsv(): string
     {
-        $rows = MetricDailyTotal::all();
+        $rows = MetricHourlyTotal::all();
 
-        $csv = "account_id,metric,date,total\n";
+        $csv = "account_id,ad_id,metric,bucket,total\n";
         foreach ($rows as $row) {
             $csv .= $row->account_id . ','
+                . $row->ad_id . ','
                 . $row->metric . ','
-                . $row->date . ','
+                . $row->bucket . ','
                 . $row->total . "\n";
         }
 

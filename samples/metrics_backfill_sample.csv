@@ -1,0 +1,13 @@
+account_id,ad_id,metric,recorded_at,value
+acc_1,ad_1001,impressions,2026-06-15 13:00:00,1820
+acc_1,ad_1001,clicks,2026-06-15 13:00:00,47
+acc_1,ad_1001,revenue,2026-06-15 13:00:00,215.40
+acc_1,ad_1001,impressions,2026-06-15 14:00:00,1660
+acc_1,ad_1001,clicks,2026-06-15 14:00:00,39
+acc_1,ad_1002,impressions,2026-06-15 13:00:00,990
+acc_1,ad_1002,clicks,2026-06-15 13:00:00,21
+acc_2,ad_2001,impressions,2026-06-15 13:00:00,4502
+acc_2,ad_2001,clicks,2026-06-15 13:00:00,118
+acc_2,ad_2001,revenue,2026-06-15 13:00:00,640.05
+acc_2,ad_2001,impressions,2026-06-15 14:00:00,4310
+acc_2,ad_2002,revenue,2026-06-15 14:00:00,12.00

@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Http;
 
 class MetricsImporter
 {
-    private const METRICS = ['impressions', 'clicks', 'revenue'];
-
     /**
      * Every point we created this run, kept so we can report a total at the end.
      */
@@ -36,22 +34,19 @@ class MetricsImporter
 
     public function import(string $accountId): int
     {
+        $rows = $this->fetchAllPages($accountId);
+
         $points = [];
+        foreach ($rows as $row) {
+            $point = MetricPoint::create([
+                'account_id' => $accountId,
+                'metric' => $row['metric'],
+                'date' => date('Y-m-d', strtotime($row['timestamp'])),
+                'value' => $row['value'],
+            ]);
 
-        foreach (self::METRICS as $metric) {
-            $rows = $this->fetchAllPages($accountId, $metric);
-
-            foreach ($rows as $row) {
-                $point = MetricPoint::create([
-                    'account_id' => $accountId,
-                    'metric' => $metric,
-                    'date' => date('Y-m-d', strtotime($row['timestamp'])),
-                    'value' => $row['value'],
-                ]);
-
-                $this->imported[] = $point;
-                $points[] = ['metric' => $metric, 'timestamp' => $row['timestamp'], 'value' => $row['value']];
-            }
+            $this->imported[] = $point;
+            $points[] = $row;
         }
 
         $totals = collect($points)
@@ -72,15 +67,14 @@ class MetricsImporter
         return count($points);
     }
 
-    private function fetchAllPages(string $accountId, string $metric): array
+    private function fetchAllPages(string $accountId): array
     {
         $all = [];
         $page = 1;
 
         do {
             $response = Http::withToken(env('ANALYTICS_API_KEY'))
-                ->get(env('ANALYTICS_API_URL') . '/v1/accounts/' . $accountId . '/timeseries', [
-                    'metric' => $metric,
+                ->get(env('ANALYTICS_API_URL') . '/v1/accounts/' . $accountId . '/metrics', [
                     'page' => $page,
                 ]);
 
